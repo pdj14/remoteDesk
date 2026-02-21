@@ -1,0 +1,10 @@
+1. 실행시 나오는 작업관리자이름을 RustDesk Remote Desktop 이 아니라 SDF RemoteDesktop 으로 변경해줘.
+2. 실행하면 나오는 프로그램의 상위 이름을 RustDesk에서 SdfDesk로 변경해줘. 
+3. icon은 첨부한 것으로 바꿔줘. 
+4. 실행시 보여주는 UI는 모두 가려줘.ID 정보만 보여주면되. 설정 화면으로 넘어가는 것도 없애줘. 모든 화면은 ID정보를 보여주는 곳에서 ID 라는 category를 10번 클릭시 지금의 화면처럼 나왔으면해. 
+5. 비밀번호는 일회용 비밀번호와 영구 비밀번호 둘다 사용을 default로 해줘. 영구비밀번호는 rustdesk.exe --set-pwd "password" 처럼 cli통해 등록, 변경이 가능했으면해.
+6. 서비스 시작은 cli를 통해 rustdesk가 실행된 상태에서 rustdesk.exe --start-service 를 입력하면 서비스가 시작되도록 해줘. stop도 --stop-service야
+7. hbbs, hbbr, key를 cli로 설정가능
+8. 화면연결시 나오는 상위 icon중 대화 icon, 번개icon, keyboard icon, camera icon은 숨겨줘. 이는 화면 icon을 10번 연속 누르면 toggle로 숨긴 메뉴들이 나오도록 해줘. 
+9. 보여주는 화면의 default는 축소를 선택하도록 해줘. 
+10. 제공하는PC에서 권한관련하여 Popup

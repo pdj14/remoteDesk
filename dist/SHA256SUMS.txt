@@ -1,0 +1,2 @@
+6d58954ece4364f8eb6b966a14886b6b1ff4ab5ab377d6074b44baa3abf02040 *RustDesk-v1.4.5-Windows-x64-Portable.exe
+6d58954ece4364f8eb6b966a14886b6b1ff4ab5ab377d6074b44baa3abf02040 *RustDesk-Windows-x64-Portable-latest.exe
