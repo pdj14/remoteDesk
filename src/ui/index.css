@@ -21,6 +21,72 @@ body {
     size: *;
 }
 
+.id-only-root {
+    size: *;
+    background: color(gray-bg);
+    border-spacing: 10px;
+    padding: 12px;
+}
+
+.id-only-card {
+    background: color(bg);
+    border: color(border) 1px solid;
+    border-radius: 10px;
+    border-spacing: 6px;
+    padding: 12px;
+    cursor: pointer;
+}
+
+.id-only-card:hover {
+    border-color: color(accent);
+}
+
+.id-only-category-row {
+    flow: horizontal;
+    width: *;
+}
+
+.id-only-category-label {
+    width: *;
+    color: color(lighter-text);
+    font-size: 0.85em;
+    text-transform: uppercase;
+}
+
+.id-only-category-value {
+    color: color(accent);
+    font-size: 0.85em;
+    font-weight: 700;
+}
+
+.id-only-caption {
+    color: color(light-text);
+    font-size: 0.9em;
+    line-height: 1.2em;
+}
+
+.id-only-value {
+    font-size: 2.1em;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: color(text);
+}
+
+.id-only-toggle-value {
+    min-height: 1.5em;
+    line-height: 1.5em;
+    font-size: 1.2em;
+    font-weight: 600;
+    color: color(text);
+    cursor: pointer;
+    user-select: none;
+}
+
+.id-only-value:hover,
+.id-only-toggle-value:hover {
+    color: color(accent);
+}
+
 .lighter-text {
     color: color(lighter-text);
     font-size: 0.9em;

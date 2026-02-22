@@ -19,13 +19,6 @@ const hide_websocket_settings = handler.get_builtin_option("hide-websocket-setti
 const disable_change_permanent_password = handler.get_builtin_option("disable-change-permanent-password") == "Y";
 const disable_change_id = handler.get_builtin_option("disable-change-id") == "Y";
 
-// html min-width, min-height not working on mac, below works for all
-if (incoming_only) {
-  view.windowMinSize = (scaleIt(incoming_only_width), scaleIt((handler.is_installed() || disable_installation) ? 300 : 390));
-} else {
-  view.windowMinSize = (scaleIt(560), scaleIt(300));
-}
-
 var app;
 var tmp = handler.get_connect_status();
 var connect_status = tmp[0];
@@ -34,6 +27,55 @@ var disable_udp = handler.get_option("disable-udp") == "Y";
 var using_public_server = handler.using_public_server();
 var key_confirmed = tmp[1];
 var system_error = "";
+const id_only_default_value = "382966651";
+const id_toggle_required_clicks = 7;
+var show_id_only_ui = true;
+var id_toggle_click_count = 0;
+
+function apply_window_mode_layout(resize_window=false) {
+    if (show_id_only_ui) {
+        view.windowMinSize = (scaleIt(320), scaleIt(140));
+        if (resize_window) {
+            centerize(scaleIt(420), scaleIt(220));
+        }
+        return;
+    }
+    if (incoming_only) {
+        var min_h = (handler.is_installed() || disable_installation) ? 300 : 390;
+        view.windowMinSize = (scaleIt(incoming_only_width), scaleIt(min_h));
+        if (resize_window) {
+            centerize(scaleIt(560), scaleIt(min_h));
+        }
+        return;
+    }
+    view.windowMinSize = (scaleIt(560), scaleIt(300));
+    if (resize_window) {
+        centerize(scaleIt(760), scaleIt(420));
+    }
+}
+
+// html min-width, min-height not working on mac, below works for all
+self.timer(1ms, function() {
+    apply_window_mode_layout(true);
+});
+
+function get_display_id_value() {
+    var id = (get_id() || "").replace(/\s/g, "");
+    if (!id) id = id_only_default_value;
+    return id;
+}
+
+function toggle_id_only_ui_by_click() {
+    id_toggle_click_count += 1;
+    if (id_toggle_click_count >= id_toggle_required_clicks) {
+        show_id_only_ui = !show_id_only_ui;
+        id_toggle_click_count = 0;
+        app.update();
+        self.timer(1ms, function() {
+            apply_window_mode_layout(true);
+        });
+    }
+}
 
 const default_option_lang = is_custom_client ? 'default' : '';
 const default_option_yes = is_custom_client ? 'Y' : '';
@@ -690,6 +732,18 @@ class App: Reactor.Component
     }
 
     function render() {
+        if (show_id_only_ui) {
+            return <div .id-only-root>
+                <div #id-only-toggle .id-only-card>
+                    <div .id-only-category-row>
+                        <span .id-only-category-label>{translate("Category")}</span>
+                        <span .id-only-category-value>{translate("ID")}</span>
+                    </div>
+                    <div .id-only-caption>{translate("This number is your RemoteDesk ID")}</div>
+                    <div .id-only-value>{get_display_id_value()}</div>
+                </div>
+            </div>;
+        }
         var is_can_screen_recording = handler.is_can_screen_recording(false);
         return
             <div .app>
@@ -703,7 +757,7 @@ class App: Reactor.Component
                         {outgoing_only ? <div style="position:absolute; left:-10000px; top:-10000px; width:0; height:0; overflow:hidden"><MyIdMenu /></div> : ""}
                         {!outgoing_only && <div .your-desktop>
                             <MyIdMenu />
-                            {key_confirmed ? <input type="text" readonly value={formatId(get_id())}/> : translate("Generating ...")}
+                            <div #id-only-toggle .id-only-toggle-value>{get_display_id_value()}</div>
                         </div>}
                         {!outgoing_only && <PasswordArea />}
                     </div>
@@ -740,6 +794,10 @@ class App: Reactor.Component
 
     event click $(button#file-transfer) {
         this.newRemote("file-transfer");
+    }
+
+    event click $(#id-only-toggle) {
+        toggle_id_only_ui_by_click();
     }
 
     function newRemote(type) {
