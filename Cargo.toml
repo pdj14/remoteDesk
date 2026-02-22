@@ -17,6 +17,14 @@ name = "remotedesk"
 path = "src/main.rs"
 
 [[bin]]
+name = "remotedesk-cli"
+path = "src/main_cli.rs"
+
+[[bin]]
+name = "remotedesk-admin"
+path = "src/main_admin.rs"
+
+[[bin]]
 name = "naming"
 path = "src/naming.rs"
 

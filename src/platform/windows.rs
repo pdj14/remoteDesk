@@ -1302,16 +1302,106 @@ fn get_install_info_with_subkey(subkey: String) -> (String, String, String, Stri
 }
 
 pub fn copy_raw_cmd(src_raw: &str, _raw: &str, _path: &str) -> ResultType<String> {
-    let main_raw = format!(
-        "XCOPY \"{}\" \"{}\" /Y /E /H /C /I /K /R /Z",
-        PathBuf::from(src_raw)
-            .parent()
-            .ok_or(anyhow!("Can't get parent directory of {src_raw}"))?
-            .to_string_lossy()
-            .to_string(),
-        _path
-    );
-    return Ok(main_raw);
+    let src_path = Path::new(src_raw);
+    let src_dir = src_path
+        .parent()
+        .ok_or(anyhow!("Can't get parent directory of {src_raw}"))?;
+    let app_name = crate::get_app_name();
+    let app_name_lower = app_name.to_lowercase();
+
+    let find_required = |candidates: &[PathBuf], label: &str| -> ResultType<PathBuf> {
+        if let Some(path) = candidates.iter().find(|path| path.exists()) {
+            Ok(path.to_path_buf())
+        } else {
+            bail!(
+                "Required install source file ({}) was not found. Tried: {}",
+                label,
+                candidates
+                    .iter()
+                    .map(|p| p.to_string_lossy().to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+        }
+    };
+
+    let main_exe_src = find_required(
+        &[
+            src_dir.join(format!("{}.exe", app_name)),
+            src_dir.join(format!("{}.exe", app_name_lower)),
+        ],
+        "main executable",
+    )?;
+    let cli_exe_src = find_required(
+        &[
+            src_dir.join(format!("{}-cli.exe", app_name_lower)),
+            src_dir.join(format!("{}-cli.exe", app_name)),
+        ],
+        "cli executable",
+    )?;
+    let admin_exe_src = find_required(
+        &[
+            src_dir.join(format!("{}-admin.exe", app_name_lower)),
+            src_dir.join(format!("{}-admin.exe", app_name)),
+        ],
+        "admin executable",
+    )?;
+    let sciter_dll_src = find_required(
+        &[src_dir.join("sciter.dll"), src_dir.join("Sciter.dll")],
+        "sciter.dll",
+    )?;
+
+    let mut cmds = vec![
+        format!(
+            "copy /Y \"{}\" \"{}\"",
+            main_exe_src.to_string_lossy(),
+            _raw
+        ),
+        format!(
+            "copy /Y \"{}\" \"{}\\{}-cli.exe\"",
+            cli_exe_src.to_string_lossy(),
+            _path,
+            app_name_lower
+        ),
+        format!(
+            "copy /Y \"{}\" \"{}\\{}-admin.exe\"",
+            admin_exe_src.to_string_lossy(),
+            _path,
+            app_name_lower
+        ),
+        format!(
+            "copy /Y \"{}\" \"{}\\sciter.dll\"",
+            sciter_dll_src.to_string_lossy(),
+            _path
+        ),
+    ];
+
+    // Optional runtime dependencies that are feature-specific.
+    for file_name in ["WindowInjection.dll", "printer_driver_adapter.dll", "custom.txt"] {
+        let src = src_dir.join(file_name);
+        if src.exists() {
+            cmds.push(format!(
+                "copy /Y \"{}\" \"{}\\{}\"",
+                src.to_string_lossy(),
+                _path,
+                file_name
+            ));
+        }
+    }
+
+    for dir_name in ["usbmmidd_v2", "drivers"] {
+        let src = src_dir.join(dir_name);
+        if src.exists() {
+            cmds.push(format!(
+                "xcopy \"{}\" \"{}\\{}\" /Y /E /H /C /I /K /R /Z",
+                src.to_string_lossy(),
+                _path,
+                dir_name
+            ));
+        }
+    }
+
+    Ok(cmds.join("\n"))
 }
 
 pub fn copy_exe_cmd(src_exe: &str, exe: &str, path: &str) -> ResultType<String> {
