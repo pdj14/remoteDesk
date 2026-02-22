@@ -2174,6 +2174,19 @@ pub fn wide_string(s: &str) -> Vec<u16> {
         .collect()
 }
 
+pub fn activate_window_by_title(window_name: &str) -> bool {
+    unsafe {
+        let window_name_utf16 = wide_string(window_name);
+        let window = FindWindowW(std::ptr::null(), window_name_utf16.as_ptr());
+        if window.is_null() {
+            return false;
+        }
+        ShowWindow(window, SW_RESTORE);
+        SetForegroundWindow(window);
+    }
+    true
+}
+
 /// send message to currently shown window
 pub fn send_message_to_hnwd(
     class_name: &str,

@@ -160,18 +160,8 @@ pub fn core_main() -> Option<Vec<String>> {
         return try_send_by_dbus(args[0].clone());
     }
 
-    #[cfg(windows)]
-    if !crate::platform::is_installed()
-        && args.is_empty()
-        && _is_quick_support
-        && !_is_elevate
-        && !_is_run_as_system
-    {
-        use crate::portable_service::client;
-        if let Err(e) = client::start_portable_service(client::StartPara::Direct) {
-            log::error!("Failed to start portable service: {:?}", e);
-        }
-    }
+    // Do not auto-start the portable elevated service on app launch.
+    // This avoids triggering a UAC prompt every time the user opens the main app.
     #[cfg(windows)]
     if !crate::platform::is_installed() && (_is_elevate || _is_run_as_system) {
         crate::platform::elevate_or_run_as_system(click_setup, _is_elevate, _is_run_as_system);

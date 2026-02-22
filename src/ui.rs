@@ -114,6 +114,11 @@ pub fn start(args: &mut [String]) {
     }
     #[cfg(windows)]
     try_set_sciter_library();
+    #[cfg(windows)]
+    if args.is_empty() && crate::check_process("", true) {
+        let _ = crate::platform::windows::activate_window_by_title(&crate::get_app_name());
+        return;
+    }
     // https://github.com/c-smile/sciter-sdk/blob/master/include/sciter-x-types.h
     // https://github.com/rustdesk/rustdesk/issues/132#issuecomment-886069737
     #[cfg(windows)]

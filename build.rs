@@ -81,8 +81,10 @@ fn build_winres() {
         .set("OriginalFilename", "remotedesk.exe")
         .set("InternalName", "remotedesk");
 
-    #[cfg(feature = "inline")]
-    if std::env::var("PROFILE").unwrap() == "release" {
+    if std::env::var("PROFILE")
+        .map(|profile| profile == "release")
+        .unwrap_or(false)
+    {
         res.set_manifest_file("res/manifest.xml");
     }
 
