@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     iter::FromIterator,
+    path::PathBuf,
     sync::{Arc, Mutex},
 };
 
@@ -36,6 +37,58 @@ lazy_static::lazy_static! {
 
 struct UIHostHandler;
 
+#[cfg(windows)]
+fn try_set_sciter_library() {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            candidates.push(parent.join("sciter.dll"));
+            if let Some(grand_parent) = parent.parent() {
+                candidates.push(grand_parent.join("sciter.dll"));
+            }
+        }
+    }
+
+    for dll_path in candidates {
+        if dll_path.exists() {
+            let p = dll_path.to_string_lossy().to_string();
+            log::debug!("Found sciter dll: {}, set_library={:?}", p, sciter::set_library(&p));
+            return;
+        }
+    }
+    log::warn!(
+        "sciter.dll not found near executable. Expected alongside remotedesk.exe."
+    );
+}
+
+#[cfg(not(feature = "inline"))]
+fn resolve_ui_page_file_url(page: &str) -> Option<String> {
+    let mut roots: Vec<PathBuf> = Vec::new();
+    if let Ok(cwd) = std::env::current_dir() {
+        roots.push(cwd);
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            roots.push(parent.to_path_buf());
+            if let Some(pp) = parent.parent() {
+                roots.push(pp.to_path_buf());
+                if let Some(ppp) = pp.parent() {
+                    roots.push(ppp.to_path_buf());
+                }
+            }
+        }
+    }
+
+    for root in roots {
+        let file = root.join("src").join("ui").join(page);
+        if file.exists() {
+            let file = file.to_string_lossy().replace('\\', "/");
+            return Some(format!("file://{file}"));
+        }
+    }
+    None
+}
+
 pub fn start(args: &mut [String]) {
     #[cfg(target_os = "macos")]
     crate::platform::delegate::show_dock();
@@ -60,17 +113,7 @@ pub fn start(args: &mut [String]) {
         sciter::set_library(&so_path).ok();
     }
     #[cfg(windows)]
-    // Check if there is a sciter.dll nearby.
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
-            let sciter_dll_path = parent.join("sciter.dll");
-            if sciter_dll_path.exists() {
-                // Try to set the sciter dll.
-                let p = sciter_dll_path.to_string_lossy().to_string();
-                log::debug!("Found dll:{}, \n {:?}", p, sciter::set_library(&p));
-            }
-        }
-    }
+    try_set_sciter_library();
     // https://github.com/c-smile/sciter-sdk/blob/master/include/sciter-x-types.h
     // https://github.com/rustdesk/rustdesk/issues/132#issuecomment-886069737
     #[cfg(windows)]
@@ -175,13 +218,21 @@ pub fn start(args: &mut [String]) {
         frame.load_html(html.as_bytes(), Some(page));
     }
     #[cfg(not(feature = "inline"))]
-    frame.load_file(&format!(
-        "file://{}/src/ui/{}",
-        std::env::current_dir()
-            .map(|c| c.display().to_string())
-            .unwrap_or("".to_owned()),
-        page
-    ));
+    {
+        if let Some(url) = resolve_ui_page_file_url(page) {
+            frame.load_file(&url);
+        } else {
+            log::error!("UI page not found: {}", page);
+            let html = format!(
+                "<html><body style=\"font-family:sans-serif;padding:24px\">\
+                 <h3>UI resource not found</h3><p>Could not locate <b>{}</b>.</p>\
+                 <p>Expected under <code>src/ui</code> near the executable or working directory.</p>\
+                 </body></html>",
+                page
+            );
+            frame.load_html(html.as_bytes(), Some("error.html"));
+        }
+    }
     let hide_cm = *cm::HIDE_CM.lock().unwrap();
     if !args.is_empty() && args[0] == "--cm" && hide_cm {
         // run_app calls expand(show) + run_loop, we use collapse(hide) + run_loop instead to create a hidden window

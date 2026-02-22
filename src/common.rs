@@ -122,6 +122,16 @@ impl Drop for SimpleCallOnReturn {
 }
 
 pub fn global_init() -> bool {
+    // Keep default branding aligned with this fork unless a custom client
+    // config overrides APP_NAME later in startup.
+    let should_override_app_name = {
+        let app_name = config::APP_NAME.read().unwrap();
+        app_name.eq("RustDesk")
+    };
+    if should_override_app_name {
+        *config::APP_NAME.write().unwrap() = "RemoteDesk".to_owned();
+    }
+
     #[cfg(target_os = "linux")]
     {
         if !crate::platform::linux::is_x11() {
