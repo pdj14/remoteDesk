@@ -19,6 +19,7 @@ use crate::{common::get_app_name, ipc, ui_interface::*};
 
 mod cm;
 #[cfg(feature = "inline")]
+#[path = "ui/inline_mod.rs"]
 pub mod inline;
 pub mod remote;
 
